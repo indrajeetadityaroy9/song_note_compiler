@@ -1,5 +1,5 @@
-#ifndef PROJECT02_SOUNDSAMPLES_H
-#define PROJECT02_SOUNDSAMPLES_H
+#ifndef SONG_NOTE_COMPILER_SOUNDSAMPLES_H
+#define SONG_NOTE_COMPILER_SOUNDSAMPLES_H
 
 class SoundSamples {
 private:
@@ -93,4 +93,4 @@ public:
     void adsr( float atime, float alevel, float dtime, float slevel, float rtime);
 };
 
-#endif //PROJECT02_SOUNDSAMPLES_H
+#endif //SONG_NOTE_COMPILER_SOUNDSAMPLES_H

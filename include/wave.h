@@ -1,5 +1,5 @@
-#ifndef PROJECT02_WAVE_H
-#define PROJECT02_WAVE_H
+#ifndef SONG_NOTE_COMPILER_WAVE_H
+#define SONG_NOTE_COMPILER_WAVE_H
 #include <iostream>
 #include <string>
 #include "SoundSamples.h"
@@ -17,6 +17,12 @@ public:
      * @param name
      */
     explicit Wave(string  name);
+
+    /**
+     * virtual destructor for proper cleanup of derived classes
+     */
+    virtual ~Wave() = default;
+
     /**
      * creates the samples for the specified wave at the specified sample rate for the specified duration
      * @param frequency
@@ -33,4 +39,4 @@ public:
     virtual float generateFunction(float time);
 };
 
-#endif //PROJECT02_WAVE_H
+#endif //SONG_NOTE_COMPILER_WAVE_H

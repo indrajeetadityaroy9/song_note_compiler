@@ -1,5 +1,5 @@
-#ifndef PROJECT02_SOUNDIO_H
-#define PROJECT02_SOUNDIO_H
+#ifndef SONG_NOTE_COMPILER_SOUNDIO_H
+#define SONG_NOTE_COMPILER_SOUNDIO_H
 #include "SoundSamples.h"
 #include <string>
 using namespace std;
@@ -13,4 +13,4 @@ public:
      */
     static void OutputSound(SoundSamples *samples, string filename );
 };
-#endif //PROJECT02_SOUNDIO_H
+#endif //SONG_NOTE_COMPILER_SOUNDIO_H
