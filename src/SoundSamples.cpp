@@ -1,22 +1,12 @@
 #include <iostream>
 #include "SoundSamples.h"
-
 using namespace std;
 
-/**
- * default constructor
- */
 SoundSamples::SoundSamples() {
     length = 0;
     sample_rate = 8000;
 }
 
-/**
- * specific constructor that takes float array, no. of samples, samplerate
- * @param samples
- * @param length
- * @param sample_rate
- */
 SoundSamples::SoundSamples(const float *samples, int length, float sample_rate) {
     this->length = length;
     this->sample_rate = sample_rate;
@@ -27,11 +17,6 @@ SoundSamples::SoundSamples(const float *samples, int length, float sample_rate) 
     }
 }
 
-/**
- * specific constructor that takes no. of samples and samplerate
- * @param length
- * @param sample_rate
- */
 SoundSamples::SoundSamples(int length, float sample_rate) {
     this->length = length;
     this->sample_rate = sample_rate;
@@ -42,10 +27,6 @@ SoundSamples::SoundSamples(int length, float sample_rate) {
     }
 }
 
-/**
- * copy constructor that deep copies the object
- * @param S
- */
 SoundSamples::SoundSamples(const SoundSamples &S) {
     if (this != &S) {
         delete[] samples;
@@ -59,11 +40,6 @@ SoundSamples::SoundSamples(const SoundSamples &S) {
     }
 }
 
-/**
- * Overloaded = operator
- * @param S
- * @return
- */
 SoundSamples &SoundSamples::operator=(const SoundSamples &S) {
     if (this != &S) {
         delete[] samples;
@@ -78,11 +54,6 @@ SoundSamples &SoundSamples::operator=(const SoundSamples &S) {
     return *this;
 }
 
-/**
- * Overloaded + operator
- * @param S
- * @return
- */
 SoundSamples SoundSamples::operator+(const SoundSamples &S) const {
     SoundSamples a;
     a.sample_rate = S.sample_rate;
@@ -102,11 +73,6 @@ SoundSamples SoundSamples::operator+(const SoundSamples &S) const {
     return a;
 }
 
-/**
- * Overloaded [] operator
- * @param index
- * @return
- */
 float &SoundSamples::operator[](int index) const {
     if (index >= length) {
         cout << "Array index out of bound, exiting";
@@ -115,26 +81,14 @@ float &SoundSamples::operator[](int index) const {
     return samples[index];
 }
 
-/**
- * getter function for sample rate
- * @return
- */
 float SoundSamples::getSampleRate() const {
     return this->sample_rate;
 }
 
-/**
- * getter function for no. of samples
- * @return
- */
 int SoundSamples::getLength() const {
     return SoundSamples::length;
 }
 
-/**
- * getter function for samples array
- * @return
- */
 float *SoundSamples::getsamples() const {
     return samples;
 }

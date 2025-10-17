@@ -12,6 +12,7 @@ TARGET = $(BIN_DIR)/songgen
 # Object files for songgen
 OBJECTS = $(BUILD_DIR)/songgen.o \
           $(BUILD_DIR)/NoteParser.o \
+          $(BUILD_DIR)/RhythmParser.o \
           $(BUILD_DIR)/SawtoothWave.o \
           $(BUILD_DIR)/SineWave.o \
           $(BUILD_DIR)/SquareWave.o \
@@ -24,6 +25,7 @@ OBJECTS = $(BUILD_DIR)/songgen.o \
 # All source files (for compilation rules)
 SOURCES = $(SRC_DIR)/songgen.cpp \
           $(SRC_DIR)/NoteParser.cpp \
+          $(SRC_DIR)/RhythmParser.cpp \
           $(SRC_DIR)/SawtoothWave.cpp \
           $(SRC_DIR)/SineWave.cpp \
           $(SRC_DIR)/SquareWave.cpp \
@@ -42,7 +44,8 @@ HEADERS = $(INC_DIR)/SawtoothWave.h \
           $(INC_DIR)/wave.h \
           $(INC_DIR)/WavExporter.h \
           $(INC_DIR)/AudioFile.h \
-          $(INC_DIR)/NoteParser.h
+          $(INC_DIR)/NoteParser.h \
+          $(INC_DIR)/RhythmParser.h
 
 all: $(TARGET)
 
@@ -66,6 +69,7 @@ clean:
 distclean: clean
 	rm -rf test_notes twinkle_notes
 	rm -f *.raw *.wav
+	rm -f complex_example.wav advanced_example.wav rhythmic_example.wav multitrack_example.wav comprehensive_example.wav
 
 install: $(TARGET)
 	@echo "To install system-wide, run: sudo cp $(TARGET) /usr/local/bin/"

@@ -8,17 +8,8 @@ using namespace std;
 class TriangleWave : public Wave{
 
 public:
-    /**
-     * constructor can set a name of the wave
-     * @param waveName
-     */
     explicit TriangleWave(const string& waveName);
-    /**
-     * function will generate a sample of a wave given the time
-     * @param time
-     * @return
-     */
     float generateFunction(float time) override;
 };
 
-#endif //SONG_NOTE_COMPILER_TRIANGLEWAVE_H
+#endif

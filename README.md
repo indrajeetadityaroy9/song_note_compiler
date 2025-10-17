@@ -7,6 +7,14 @@ A music generation tool that compiles musical notation files into audio waveform
 - Supports standard note names (C4, A#4, Bb3, etc.)
 - Configurable sample rate and output format
 - WAV file export for immediate playback
+- Chord support (multiple notes played simultaneously)
+- Rests/pauses in music
+- Volume control for individual notes/chords
+- Rhythmic notation (quarter notes, eighth notes, dotted notes, triplets)
+- Tempo changes (BPM)
+- Time signature support
+- Multi-track composition with different instruments
+- More complex musical arrangements
 
 ## Usage
 
@@ -21,10 +29,28 @@ bin/songgen twinkle_twinkle.txt 1 44100 twinkle.wav --wav
 ```
 
 **Input file format:**
-- One note per line: `NoteName Duration`
+- One note/chord per line: `NoteName Duration [Volume]`
 - Lines starting with `#` are comments
-- Note names: C4, D#4, Eb5, etc. (octaves 0-8)
-- Duration in seconds
+- Single notes: `C4 0.5` or `C4 q`
+- Chords: `C4,E4,G4 0.5` or `C4,E4,G4 q` (comma-separated notes)
+- Rests: `R 0.5` or `R q` (silence)
+- Volume: Optional third parameter 0.0-1.0 (default: 1.0)
+- Tempo changes: `TEMPO 120` (sets tempo to 120 BPM)
+- Time signature: `TIME 4/4` (sets time signature to 4/4)
+- Track definitions: `TRACK <track_id> <wave_type> <volume>`
+- Track switching: `> <track_id>`
+
+**Duration formats:**
+- Numeric: `0.5` (seconds)
+- Rhythmic notation:
+  - `w`  = whole note (4 beats)
+  - `h`  = half note (2 beats)
+  - `q`  = quarter note (1 beat)
+  - `e`  = eighth note (1/2 beat)
+  - `s`  = sixteenth note (1/4 beat)
+  - `.`  = dotted (increases duration by 50%)
+  - `t`  = triplet (decreases duration to 2/3)
+- Examples: `q` (quarter note), `h.` (dotted half note), `8t` (eighth note triplet)
 
 **Example notation file:**
 ```
@@ -48,7 +74,7 @@ G4 1.0
   - `4` = Sawtooth Wave (bright, buzzy)
 - **sample_rate**: Sample rate in Hz (e.g., 44100 for CD quality)
 - **output_file**: Path to save the audio file
-- **--wav**: (optional) Output in WAV format instead of raw text
+- **wav**: (optional) Output in WAV format instead of raw text
 
 ### Examples
 
@@ -64,15 +90,3 @@ bin/songgen twinkle_twinkle.txt 2 44100 twinkle_square.wav --wav    # Square: 8-
 bin/songgen twinkle_twinkle.txt 3 44100 twinkle_triangle.wav --wav  # Triangle: Mellow
 bin/songgen twinkle_twinkle.txt 4 44100 twinkle_sawtooth.wav --wav  # Sawtooth: Bright
 ```
-
-
-## Musical Note Frequencies
-
-| Note | Frequency (Hz) |
-|------|----------------|
-| C4   | 261.63         |
-| D4   | 293.66         |
-| E4   | 329.63         |
-| F4   | 349.23         |
-| G4   | 392.00         |
-| A4   | 440.00         |
