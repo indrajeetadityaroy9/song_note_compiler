@@ -10,14 +10,14 @@ SoundSamples * Wave::generateSamples(float frequency, float samplerate, float du
 
     int length = static_cast<int>(std::round(samplerate * duration));
 
-    float *samples;
-    samples = (float *) malloc(length * sizeof(float));
+    float *samples = new float[length];
 
     for (int i = 0; i < length; i++) {
         samples[i] = generateFunction(i*frequency/samplerate);
     }
 
-    auto *S = new SoundSamples(samples,length,samplerate);
+    auto *S = new SoundSamples(samples, length, samplerate);
+    delete[] samples;
     return S;
 }
 

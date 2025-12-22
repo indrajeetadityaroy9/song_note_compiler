@@ -12,13 +12,17 @@ public:
     SoundSamples(const float *samples, int length, float sample_rate);
     SoundSamples(int length, float sample_rate);
     SoundSamples(const SoundSamples &S);
+    SoundSamples(SoundSamples&& S) noexcept;
+    ~SoundSamples();
+
     float getSampleRate() const;
     int getLength() const;
     float *getsamples() const;
+
     SoundSamples &operator=(const SoundSamples &S);
+    SoundSamples &operator=(SoundSamples&& S) noexcept;
     float &operator[](int index) const;
     SoundSamples operator+(const SoundSamples &S) const;
-    void adsr( float atime, float alevel, float dtime, float slevel, float rtime);
 };
 
 #endif

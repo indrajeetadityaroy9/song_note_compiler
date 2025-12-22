@@ -64,22 +64,14 @@ static bool isNumericDuration(const string& str) {
 static float parseBaseNoteType(const string& str, size_t& charsConsumed) {
     if (str.empty()) return -1.0f;
 
+    // Handle "16" special case for sixteenth notes
     if (str.length() >= 2 && str[0] == '1' && str[1] == '6') {
         charsConsumed = 2;
-        return 0.25f;  
+        return 0.25f;
     }
 
     charsConsumed = 1;
-    char noteType = str[0];
-
-    switch (noteType) {
-        case 'w': case '1': return 4.0f;   
-        case 'h': case '2': return 2.0f;   
-        case 'q': case '4': return 1.0f;   
-        case 'e': case '8': return 0.5f;   
-        case 's':           return 0.25f;  
-        default: return -1.0f;
-    }
+    return RhythmParser::getNoteBeatValue(str[0]);
 }
 
 float RhythmParser::parseRhythm(const string& rhythmStr, float tempo, const string& timeSignature) {
