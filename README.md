@@ -2,6 +2,8 @@
 
 A music generation tool for composing and synthesizing audio from musical notation. Features real-time playback, waveform visualization, and WAV export.
 
+<img width="1483" height="654" alt="Screenshot 2025-12-21 at 11 45 55 PM" src="https://github.com/user-attachments/assets/dff81036-7531-4cb3-a712-7d9fd26409c8" />
+
 ## Features
 
 - **Interactive GUI** with real-time audio playback
