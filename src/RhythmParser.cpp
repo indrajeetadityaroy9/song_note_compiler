@@ -1,8 +1,10 @@
 #include "RhythmParser.h"
+#include "core/MusicXMLTypes.h"
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 using namespace std;
 
@@ -110,4 +112,123 @@ float RhythmParser::parseRhythm(const string& rhythmStr, float tempo, const stri
 
     beats *= multiplier;
     return beatsToSeconds(beats, tempo);
+}
+
+// Convert duration string to MusicXML duration structure
+MusicXMLDuration RhythmParser::durationStrToMusicXML(const string& durationStr, int divisions) {
+    MusicXMLDuration result;
+    result.divisions = divisions;  // Default to quarter note
+    result.type = "quarter";
+    result.dots = 0;
+    result.isTriplet = false;
+
+    if (durationStr.empty()) return result;
+
+    string str = durationStr;
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+
+    // Parse base note type
+    float baseBeats = 0.0f;
+    size_t charsConsumed = 0;
+
+    // Handle "16" for sixteenth notes
+    if (str.length() >= 2 && str[0] == '1' && str[1] == '6') {
+        baseBeats = 0.25f;
+        charsConsumed = 2;
+    } else {
+        baseBeats = getNoteBeatValue(str[0]);
+        charsConsumed = 1;
+    }
+
+    if (baseBeats <= 0) {
+        // Try to parse as numeric (direct seconds) - default to quarter note
+        return result;
+    }
+
+    // Set type string based on base beats
+    result.type = beatsToTypeString(baseBeats);
+
+    // Parse modifiers
+    float totalBeats = baseBeats;
+    for (size_t i = charsConsumed; i < str.length(); i++) {
+        if (str[i] == '.') {
+            result.dots++;
+            totalBeats *= DOTTED_MULTIPLIER;
+        } else if (str[i] == 't') {
+            result.isTriplet = true;
+            totalBeats *= TRIPLET_MULTIPLIER;
+        }
+    }
+
+    // Calculate MusicXML duration value
+    result.divisions = static_cast<int>(round(totalBeats * divisions));
+
+    return result;
+}
+
+// Convert MusicXML duration back to duration string
+string RhythmParser::musicXMLToDurationStr(const MusicXMLDuration& mxmlDur) {
+    string result;
+
+    // Convert type to our notation
+    float beats = typeStringToBeats(mxmlDur.type);
+
+    // Map beats to duration character
+    if (beats >= 4.0f) result = "w";
+    else if (beats >= 2.0f) result = "h";
+    else if (beats >= 1.0f) result = "q";
+    else if (beats >= 0.5f) result = "e";
+    else result = "s";
+
+    // Add dots
+    for (int i = 0; i < mxmlDur.dots; i++) {
+        result += ".";
+    }
+
+    // Add triplet marker
+    if (mxmlDur.isTriplet) {
+        result += "t";
+    }
+
+    return result;
+}
+
+// Calculate optimal divisions for a set of durations
+int RhythmParser::calculateDivisions(const vector<string>& durationStrs) {
+    // Use 24 divisions per quarter note as default
+    // This handles: whole (96), half (48), quarter (24), eighth (12),
+    // sixteenth (6), triplets (8), dotted notes cleanly
+    return DEFAULT_DIVISIONS;
+}
+
+// Convert beats to MusicXML duration units
+int RhythmParser::beatsToMusicXMLDuration(float beats, int divisions) {
+    return static_cast<int>(round(beats * divisions));
+}
+
+// Convert MusicXML duration to beats
+float RhythmParser::musicXMLDurationToBeats(int duration, int divisions) {
+    if (divisions <= 0) return 1.0f;
+    return static_cast<float>(duration) / divisions;
+}
+
+// Convert beat value to MusicXML type string
+string RhythmParser::beatsToTypeString(float beats) {
+    if (beats >= 4.0f) return "whole";
+    if (beats >= 2.0f) return "half";
+    if (beats >= 1.0f) return "quarter";
+    if (beats >= 0.5f) return "eighth";
+    if (beats >= 0.25f) return "16th";
+    return "32nd";
+}
+
+// Convert MusicXML type string to beats
+float RhythmParser::typeStringToBeats(const string& type) {
+    if (type == "whole" || type == "breve") return 4.0f;
+    if (type == "half") return 2.0f;
+    if (type == "quarter") return 1.0f;
+    if (type == "eighth") return 0.5f;
+    if (type == "16th") return 0.25f;
+    if (type == "32nd") return 0.125f;
+    return 1.0f;  // Default to quarter
 }

@@ -30,6 +30,11 @@ private:
     void exportWav(const std::string& path);
     void loadTemplate(int templateIndex);
 
+    // File operations
+    void openMusicXMLFile();
+    void saveMusicXMLFile();
+    void saveMusicXMLFileAs();
+
     GLFWwindow* m_window = nullptr;
     EditorState m_state;
     AudioPlayer m_audioPlayer;

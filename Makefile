@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g -Wall -std=c++17 -Iinclude -Ivendor/imgui -Ivendor/imgui/backends -Ivendor/miniaudio
+CXXFLAGS = -g -Wall -std=c++17 -Iinclude -Ivendor/imgui -Ivendor/imgui/backends -Ivendor/miniaudio -Ivendor/pugixml
 LDFLAGS = -lm
 
 # Platform-specific flags for GUI
@@ -38,7 +38,10 @@ AUDIO_OBJECTS = $(BUILD_DIR)/NoteParser.o \
 
 # Core module objects
 CORE_OBJECTS = $(BUILD_DIR)/core/SongGenerator.o \
-               $(BUILD_DIR)/core/FileParser.o
+               $(BUILD_DIR)/core/MusicXMLParser.o
+
+# pugixml objects
+PUGIXML_OBJECTS = $(BUILD_DIR)/pugixml/pugixml.o
 
 # GUI objects
 GUI_OBJECTS = $(BUILD_DIR)/gui/main_gui.o \
@@ -71,7 +74,8 @@ HEADERS = $(INC_DIR)/SawtoothWave.h \
           $(INC_DIR)/core/Track.h \
           $(INC_DIR)/core/SongContext.h \
           $(INC_DIR)/core/SongGenerator.h \
-          $(INC_DIR)/core/FileParser.h \
+          $(INC_DIR)/core/MusicXMLParser.h \
+          $(INC_DIR)/core/MusicXMLTypes.h \
           $(INC_DIR)/gui/EditorState.h \
           $(INC_DIR)/gui/AudioPlayer.h \
           $(INC_DIR)/gui/Application.h
@@ -79,8 +83,8 @@ HEADERS = $(INC_DIR)/SawtoothWave.h \
 # Default target: build GUI
 all: $(TARGET)
 
-$(TARGET): $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) | $(BIN_DIR)
-	$(CXX) $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) \
+$(TARGET): $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) $(PUGIXML_OBJECTS) | $(BIN_DIR)
+	$(CXX) $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) $(PUGIXML_OBJECTS) \
 	    -o $(TARGET) $(LDFLAGS) $(GLFW_LIBS) $(GL_LIBS) -lpthread
 
 # Audio/wave compilation rules
@@ -88,7 +92,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Ensure build directories exist
-DIRS = $(BUILD_DIR) $(BUILD_DIR)/core $(BUILD_DIR)/gui $(BUILD_DIR)/imgui $(BIN_DIR)
+DIRS = $(BUILD_DIR) $(BUILD_DIR)/core $(BUILD_DIR)/gui $(BUILD_DIR)/imgui $(BUILD_DIR)/pugixml $(BIN_DIR)
 
 $(DIRS):
 	mkdir -p $@
@@ -97,7 +101,11 @@ $(DIRS):
 $(BUILD_DIR)/core/SongGenerator.o: $(SRC_DIR)/core/SongGenerator.cpp $(HEADERS) | $(BUILD_DIR)/core
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/core/FileParser.o: $(SRC_DIR)/core/FileParser.cpp $(HEADERS) | $(BUILD_DIR)/core
+$(BUILD_DIR)/core/MusicXMLParser.o: $(SRC_DIR)/core/MusicXMLParser.cpp $(HEADERS) | $(BUILD_DIR)/core
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# pugixml compilation rule
+$(BUILD_DIR)/pugixml/pugixml.o: $(VENDOR_DIR)/pugixml/pugixml.cpp | $(BUILD_DIR)/pugixml
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # GUI compilation rules

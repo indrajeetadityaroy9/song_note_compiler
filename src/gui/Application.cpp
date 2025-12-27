@@ -1,6 +1,6 @@
 #include "gui/Application.h"
 #include "core/SongGenerator.h"
-#include "core/FileParser.h"
+#include "core/MusicXMLParser.h"
 #include "WavExporter.h"
 #include "RhythmParser.h"
 #include "NoteParser.h"
@@ -154,6 +154,16 @@ void Application::renderMainWindow() {
 void Application::renderMenuBar() {
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Open MusicXML...", "Ctrl+O")) {
+                openMusicXMLFile();
+            }
+            if (ImGui::MenuItem("Save MusicXML", "Ctrl+S")) {
+                saveMusicXMLFile();
+            }
+            if (ImGui::MenuItem("Save MusicXML As...")) {
+                saveMusicXMLFileAs();
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Export WAV...")) {
                 if (m_state.generatedAudio) {
                     exportWav(m_exportPathBuffer);
@@ -1091,5 +1101,140 @@ void Application::exportWav(const std::string& path) {
         m_state.setStatus("Exported WAV to " + path);
     } else {
         m_state.setStatus("Error: Could not export WAV file");
+    }
+}
+
+void Application::openMusicXMLFile() {
+    // Simple file path input using ImGui popup
+    static char pathBuffer[512] = "";
+    static bool showOpenPopup = false;
+
+    if (!showOpenPopup) {
+        showOpenPopup = true;
+        ImGui::OpenPopup("Open MusicXML File");
+    }
+
+    if (ImGui::BeginPopupModal("Open MusicXML File", &showOpenPopup, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Enter file path:");
+        ImGui::SetNextItemWidth(400);
+        ImGui::InputText("##openfilepath", pathBuffer, sizeof(pathBuffer));
+
+        ImGui::Spacing();
+
+        if (ImGui::Button("Open", ImVec2(120, 0))) {
+            std::string filepath = pathBuffer;
+            if (!filepath.empty()) {
+                // Clear current state
+                m_state.notes.clear();
+                m_state.selectedNoteIndex = -1;
+                m_audioPlayer.stop();
+                m_state.playbackPosition = 0;
+                m_state.trackAudio.clear();
+                m_state.generatedAudio.reset();
+
+                // Reset context
+                SongContext newContext;
+                newContext.setTempo(120.0f);
+
+                // Load file
+                std::vector<Note> loadedNotes = MusicXMLParser::readFromFile(filepath, newContext);
+
+                if (!loadedNotes.empty() || !newContext.getTracks().empty()) {
+                    m_state.notes = loadedNotes;
+                    m_state.songContext = newContext;
+                    m_state.currentFilePath = filepath;
+                    m_state.hasUnsavedChanges = false;
+                    m_state.audioNeedsRegeneration = true;
+
+                    // Select first track if available
+                    if (!m_state.songContext.getTracks().empty()) {
+                        m_state.selectedTrackId = m_state.songContext.getTracks().begin()->first;
+                    }
+
+                    m_state.setStatus("Loaded: " + filepath);
+                } else {
+                    m_state.setStatus("Error: Could not load MusicXML file");
+                }
+            }
+            showOpenPopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showOpenPopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void Application::saveMusicXMLFile() {
+    if (m_state.currentFilePath.empty()) {
+        saveMusicXMLFileAs();
+        return;
+    }
+
+    bool success = MusicXMLParser::writeToFile(
+        m_state.notes,
+        m_state.songContext,
+        m_state.currentFilePath
+    );
+
+    if (success) {
+        m_state.hasUnsavedChanges = false;
+        m_state.setStatus("Saved: " + m_state.currentFilePath);
+    } else {
+        m_state.setStatus("Error: Could not save file");
+    }
+}
+
+void Application::saveMusicXMLFileAs() {
+    static char pathBuffer[512] = "song.musicxml";
+    static bool showSavePopup = false;
+
+    if (!showSavePopup) {
+        showSavePopup = true;
+        ImGui::OpenPopup("Save MusicXML File");
+    }
+
+    if (ImGui::BeginPopupModal("Save MusicXML File", &showSavePopup, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Enter file path:");
+        ImGui::SetNextItemWidth(400);
+        ImGui::InputText("##savefilepath", pathBuffer, sizeof(pathBuffer));
+
+        ImGui::Spacing();
+
+        if (ImGui::Button("Save", ImVec2(120, 0))) {
+            std::string filepath = pathBuffer;
+            if (!filepath.empty()) {
+                // Ensure .musicxml extension
+                if (filepath.find(".musicxml") == std::string::npos &&
+                    filepath.find(".xml") == std::string::npos) {
+                    filepath += ".musicxml";
+                }
+
+                bool success = MusicXMLParser::writeToFile(
+                    m_state.notes,
+                    m_state.songContext,
+                    filepath
+                );
+
+                if (success) {
+                    m_state.currentFilePath = filepath;
+                    m_state.hasUnsavedChanges = false;
+                    m_state.setStatus("Saved: " + filepath);
+                } else {
+                    m_state.setStatus("Error: Could not save file");
+                }
+            }
+            showSavePopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showSavePopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
     }
 }
