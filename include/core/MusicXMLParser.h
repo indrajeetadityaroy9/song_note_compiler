@@ -6,6 +6,7 @@
 #include <map>
 #include "Note.h"
 #include "SongContext.h"
+#include "MusicXMLTypes.h"
 
 // Forward declaration for pugixml
 namespace pugi {
@@ -62,8 +63,8 @@ private:
         int divisions
     );
 
-    // Constants
-    static const int DEFAULT_DIVISIONS = 24;  // Divisions per quarter note
+    // Use shared constant from MusicConstants
+    static constexpr int DEFAULT_DIVISIONS = MusicConstants::DEFAULT_DIVISIONS;
 };
 
 #endif // SONG_NOTE_COMPILER_MUSICXMLPARSER_H

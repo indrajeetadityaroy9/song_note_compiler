@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "SoundSamples.h"
 using namespace std;
 
@@ -12,30 +13,21 @@ SoundSamples::SoundSamples(const float *samples, int length, float sample_rate) 
     this->length = length;
     this->sample_rate = sample_rate;
     this->samples = new float[length];
-
-    for (int i = 0; i < length; i++) {
-        this->samples[i] = samples[i];
-    }
+    std::memcpy(this->samples, samples, length * sizeof(float));
 }
 
 SoundSamples::SoundSamples(int length, float sample_rate) {
     this->length = length;
     this->sample_rate = sample_rate;
     this->samples = new float[length];
-
-    for (int i = 0; i < length; i++) {
-        this->samples[i] = 0;
-    }
+    std::memset(this->samples, 0, length * sizeof(float));
 }
 
 SoundSamples::SoundSamples(const SoundSamples &S) {
     length = S.length;
     sample_rate = S.sample_rate;
     samples = new float[S.length];
-
-    for (int i = 0; i < S.length; i++) {
-        samples[i] = S.samples[i];
-    }
+    std::memcpy(samples, S.samples, S.length * sizeof(float));
 }
 
 SoundSamples::SoundSamples(SoundSamples&& S) noexcept
@@ -54,10 +46,7 @@ SoundSamples &SoundSamples::operator=(const SoundSamples &S) {
         samples = new float[S.length];
         length = S.length;
         sample_rate = S.sample_rate;
-
-        for (int i = 0; i < S.length; i++) {
-            samples[i] = S.samples[i];
-        }
+        std::memcpy(samples, S.samples, S.length * sizeof(float));
     }
     return *this;
 }
@@ -80,15 +69,8 @@ SoundSamples SoundSamples::operator+(const SoundSamples &S) const {
     a.length = this->length + S.length;
     a.samples = new float[a.length];
 
-    int index = 0;
-    for (int i = 0; i < this->length; i++) {
-        a.samples[i] = this->samples[index++];
-    }
-    index = 0;
-
-    for (int j = this->length; j < a.length; j++) {
-        a.samples[j] = S.samples[index++];
-    }
+    std::memcpy(a.samples, this->samples, this->length * sizeof(float));
+    std::memcpy(a.samples + this->length, S.samples, S.length * sizeof(float));
 
     return a;
 }
@@ -106,7 +88,7 @@ float SoundSamples::getSampleRate() const {
 }
 
 int SoundSamples::getLength() const {
-    return SoundSamples::length;
+    return this->length;
 }
 
 float *SoundSamples::getsamples() const {

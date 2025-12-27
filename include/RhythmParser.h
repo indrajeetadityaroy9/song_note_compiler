@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "core/MusicXMLTypes.h"
 
 // Forward declaration
 struct MusicXMLDuration;
@@ -30,8 +31,8 @@ public:
     static std::string beatsToTypeString(float beats);
     static float typeStringToBeats(const std::string& type);
 
-    // Default divisions per quarter note (24 handles triplets and dotted notes cleanly)
-    static const int DEFAULT_DIVISIONS = 24;
+    // Use shared constant from MusicConstants
+    static constexpr int DEFAULT_DIVISIONS = MusicConstants::DEFAULT_DIVISIONS;
 };
 
 #endif

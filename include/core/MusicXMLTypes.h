@@ -3,6 +3,16 @@
 
 #include <string>
 
+// Shared music constants
+namespace MusicConstants {
+    // Divisions per quarter note (24 handles triplets and dotted notes cleanly)
+    constexpr int DEFAULT_DIVISIONS = 24;
+
+    // Rhythm modifiers
+    constexpr float DOTTED_MULTIPLIER = 1.5f;
+    constexpr float TRIPLET_MULTIPLIER = 2.0f / 3.0f;
+}
+
 // MusicXML pitch representation
 struct MusicXMLPitch {
     char step = 'C';    // 'C', 'D', 'E', 'F', 'G', 'A', 'B'

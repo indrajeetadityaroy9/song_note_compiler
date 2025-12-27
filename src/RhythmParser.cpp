@@ -8,9 +8,11 @@
 
 using namespace std;
 
+// Use shared constants from MusicConstants namespace
+using MusicConstants::DOTTED_MULTIPLIER;
+using MusicConstants::TRIPLET_MULTIPLIER;
+
 namespace {
-    constexpr float DOTTED_MULTIPLIER = 1.5f;           
-    constexpr float TRIPLET_MULTIPLIER = 2.0f / 3.0f;   
     constexpr float DEFAULT_TEMPO = 120.0f;
     constexpr float DEFAULT_TIME_SIG_BEATS = 4.0f;
 }

@@ -18,13 +18,13 @@ static const EnvelopeParams defaultEnvelope = {
     0.08f    // Release: 80ms
 };
 
-Wave* SongGenerator::createWave(int waveType) {
+unique_ptr<Wave> SongGenerator::createWave(int waveType) {
     switch(waveType) {
-        case 1: return new SineWave("Sine");
-        case 2: return new SquareWave("Square");
-        case 3: return new TriangleWave("Triangle");
-        case 4: return new SawtoothWave("Sawtooth");
-        default: return new SineWave("Sine");
+        case 1: return make_unique<SineWave>("Sine");
+        case 2: return make_unique<SquareWave>("Square");
+        case 3: return make_unique<TriangleWave>("Triangle");
+        case 4: return make_unique<SawtoothWave>("Sawtooth");
+        default: return make_unique<SineWave>("Sine");
     }
 }
 
@@ -32,16 +32,22 @@ void SongGenerator::generateNoteIntoBuffer(float* buffer, int writePos, Wave* wa
                                            float frequency, float sampleRate,
                                            float duration, float volume) {
     int length = static_cast<int>(sampleRate * duration);
+
+    // Use phase accumulation instead of computing i * frequency / sampleRate each iteration
+    float phaseIncrement = frequency / sampleRate;
+    float phase = 0.0f;
+
     for (int i = 0; i < length; i++) {
-        float sample = wave->generateFunction(i * frequency / sampleRate);
+        float sample = wave->generateFunction(phase);
         buffer[writePos + i] += sample * volume;
+        phase += phaseIncrement;
     }
 }
 
-SoundSamples* SongGenerator::generateTrackAudio(const vector<Note>& trackMelody,
-                                                 const Track& trackInfo,
-                                                 float sampleRate) {
-    Wave* wave = createWave(trackInfo.waveType);
+unique_ptr<SoundSamples> SongGenerator::generateTrackAudio(const vector<Note>& trackMelody,
+                                                            const Track& trackInfo,
+                                                            float sampleRate) {
+    auto wave = createWave(trackInfo.waveType);
 
     cout << "  Generating audio for track " << trackInfo.id
          << " (" << trackInfo.name << ")..." << endl;
@@ -53,7 +59,7 @@ SoundSamples* SongGenerator::generateTrackAudio(const vector<Note>& trackMelody,
     }
 
     // Allocate full buffer once
-    SoundSamples* trackFullMelody = new SoundSamples(totalSamples, sampleRate);
+    auto trackFullMelody = make_unique<SoundSamples>(totalSamples, sampleRate);
     float* buffer = trackFullMelody->getsamples();
     int writePosition = 0;
 
@@ -78,12 +84,10 @@ SoundSamples* SongGenerator::generateTrackAudio(const vector<Note>& trackMelody,
                 float frequency = NoteParser::parseNote(noteName);
                 if (frequency < 0) {
                     cout << "  Error: Invalid note '" << noteName << "'" << endl;
-                    delete wave;
-                    delete trackFullMelody;
-                    return nullptr;
+                    return nullptr;  // unique_ptr automatically cleans up
                 }
                 frequencies.push_back(frequency);
-                generateNoteIntoBuffer(buffer, writePosition, wave, frequency,
+                generateNoteIntoBuffer(buffer, writePosition, wave.get(), frequency,
                                        sampleRate, note.duration, noteVolume);
             }
 
@@ -111,13 +115,12 @@ SoundSamples* SongGenerator::generateTrackAudio(const vector<Note>& trackMelody,
         }
     }
 
-    delete wave;
     cout << "  Finished generating audio for track " << trackInfo.id << endl;
     return trackFullMelody;
 }
 
-SoundSamples* SongGenerator::mixTracks(const map<int, SoundSamples*>& trackAudio,
-                                        float sampleRate) {
+unique_ptr<SoundSamples> SongGenerator::mixTracks(const map<int, SoundSamples*>& trackAudio,
+                                                   float sampleRate) {
     // Find the longest track
     int totalDuration = 0;
     for (const auto& pair : trackAudio) {
@@ -127,7 +130,7 @@ SoundSamples* SongGenerator::mixTracks(const map<int, SoundSamples*>& trackAudio
     }
 
     cout << "Mixing " << trackAudio.size() << " tracks..." << endl;
-    SoundSamples* fullMelody = new SoundSamples(totalDuration, sampleRate);
+    auto fullMelody = make_unique<SoundSamples>(totalDuration, sampleRate);
 
     for (const auto& pair : trackAudio) {
         SoundSamples* trackSamples = pair.second;

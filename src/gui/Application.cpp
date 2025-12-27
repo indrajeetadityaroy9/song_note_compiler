@@ -17,6 +17,67 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
+// Helper: trim whitespace from both ends of a string
+static std::string trimWhitespace(const std::string& str) {
+    std::string result = str;
+    while (!result.empty() && result.back() == ' ') result.pop_back();
+    while (!result.empty() && result.front() == ' ') result.erase(0, 1);
+    return result;
+}
+
+// Helper: parse note input string into vector of note names
+// Returns empty vector with errorMsg set on failure
+static std::vector<std::string> parseNoteInput(const std::string& noteStr, std::string& errorMsg) {
+    std::vector<std::string> parsedNotes;
+    std::string trimmed = trimWhitespace(noteStr);
+
+    if (trimmed.empty()) {
+        errorMsg = "Error: Note name is empty";
+        return parsedNotes;
+    }
+
+    // Handle rest
+    if (trimmed == "R" || trimmed == "r") {
+        parsedNotes.push_back("R");
+        return parsedNotes;
+    }
+
+    // Handle chord (comma-separated)
+    if (trimmed.find(',') != std::string::npos) {
+        size_t start = 0;
+        size_t end;
+        while ((end = trimmed.find(',', start)) != std::string::npos) {
+            std::string n = trimWhitespace(trimmed.substr(start, end - start));
+            if (!n.empty()) {
+                if (!NoteParser::isValidNote(n)) {
+                    errorMsg = "Error: Invalid note '" + n + "'";
+                    return {};
+                }
+                parsedNotes.push_back(n);
+            }
+            start = end + 1;
+        }
+        // Last note after final comma
+        std::string last = trimWhitespace(trimmed.substr(start));
+        if (!last.empty()) {
+            if (!NoteParser::isValidNote(last)) {
+                errorMsg = "Error: Invalid note '" + last + "'";
+                return {};
+            }
+            parsedNotes.push_back(last);
+        }
+    } else {
+        // Single note
+        if (!NoteParser::isValidNote(trimmed)) {
+            errorMsg = "Error: Invalid note '" + trimmed + "'";
+            return {};
+        }
+        parsedNotes.push_back(trimmed);
+    }
+
+    return parsedNotes;
+}
+
 Application::Application() {}
 
 Application::~Application() {
@@ -402,9 +463,10 @@ void Application::renderNoteEditorPanel() {
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 50);
         ImGui::TableHeadersRow();
 
-        static char editNoteBuffer[64] = "";
-        static char editDurBuffer[16] = "";
-        static float editVolume = 1.0f;
+        // Use EditorState fields instead of static variables
+        char* editNoteBuffer = m_state.editNoteBuffer;
+        char* editDurBuffer = m_state.editDurBuffer;
+        float& editVolume = m_state.editVolume;
 
         int displayIndex = 0;
         for (size_t i = 0; i < m_state.notes.size(); i++) {
@@ -478,80 +540,30 @@ void Application::renderNoteEditorPanel() {
             if (isSelected) {
                 // Apply button (checkmark)
                 if (ImGui::Button("OK")) {
-                    std::string noteStr(editNoteBuffer);
                     std::string durStr(editDurBuffer);
 
-                    // Trim whitespace
-                    while (!noteStr.empty() && noteStr.back() == ' ') noteStr.pop_back();
-                    while (!noteStr.empty() && noteStr.front() == ' ') noteStr.erase(0, 1);
+                    std::string errorMsg;
+                    std::vector<std::string> parsedNotes = parseNoteInput(editNoteBuffer, errorMsg);
 
-                    bool valid = true;
-                    std::vector<std::string> parsedNotes;
-
-                    if (noteStr.empty()) {
-                        m_state.setStatus("Error: Note name is empty");
-                        valid = false;
+                    if (!errorMsg.empty()) {
+                        m_state.setStatus(errorMsg);
                     } else if (durStr.empty()) {
                         m_state.setStatus("Error: Duration is empty");
-                        valid = false;
-                    } else if (noteStr == "R" || noteStr == "r") {
-                        parsedNotes.push_back("R");
-                    } else if (noteStr.find(',') != std::string::npos) {
-                        // Parse chord
-                        size_t start = 0;
-                        size_t end;
-                        while ((end = noteStr.find(',', start)) != std::string::npos) {
-                            std::string n = noteStr.substr(start, end - start);
-                            while (!n.empty() && n.front() == ' ') n.erase(0, 1);
-                            while (!n.empty() && n.back() == ' ') n.pop_back();
-                            if (!n.empty()) {
-                                if (!NoteParser::isValidNote(n)) {
-                                    m_state.setStatus("Error: Invalid note '" + n + "'");
-                                    valid = false;
-                                    break;
-                                }
-                                parsedNotes.push_back(n);
-                            }
-                            start = end + 1;
-                        }
-                        if (valid) {
-                            std::string last = noteStr.substr(start);
-                            while (!last.empty() && last.front() == ' ') last.erase(0, 1);
-                            while (!last.empty() && last.back() == ' ') last.pop_back();
-                            if (!last.empty()) {
-                                if (!NoteParser::isValidNote(last)) {
-                                    m_state.setStatus("Error: Invalid note '" + last + "'");
-                                    valid = false;
-                                } else {
-                                    parsedNotes.push_back(last);
-                                }
-                            }
-                        }
                     } else {
-                        if (!NoteParser::isValidNote(noteStr)) {
-                            m_state.setStatus("Error: Invalid note '" + noteStr + "'");
-                            valid = false;
-                        } else {
-                            parsedNotes.push_back(noteStr);
-                        }
-                    }
-
-                    // Validate duration
-                    if (valid) {
-                        float testDur = RhythmParser::parseRhythm(durStr, 120.0f, "4/4");
+                        // Validate duration using actual tempo and time signature
+                        float testDur = RhythmParser::parseRhythm(durStr,
+                            m_state.songContext.getTempo(),
+                            m_state.songContext.getTimeSignature());
                         if (testDur <= 0) {
                             m_state.setStatus("Error: Invalid duration '" + durStr + "'");
-                            valid = false;
+                        } else if (!parsedNotes.empty()) {
+                            note.noteNames = parsedNotes;
+                            note.durationStr = durStr;
+                            note.volume = editVolume;
+                            m_state.markDirty();
+                            m_state.selectedNoteIndex = -1;
+                            m_state.setStatus("Note updated");
                         }
-                    }
-
-                    if (valid && !parsedNotes.empty()) {
-                        note.noteNames = parsedNotes;
-                        note.durationStr = durStr;
-                        note.volume = editVolume;
-                        m_state.markDirty();
-                        m_state.selectedNoteIndex = -1;
-                        m_state.setStatus("Note updated");
                     }
                 }
                 ImGui::SameLine();
@@ -610,76 +622,25 @@ void Application::renderNoteEditorPanel() {
 
     // Buttons
     if (ImGui::Button("Add Note")) {
-        std::string noteStr(m_noteNameBuffer);
         std::string durStr(m_durationBuffer);
 
-        // Trim whitespace
-        while (!noteStr.empty() && noteStr.back() == ' ') noteStr.pop_back();
-        while (!noteStr.empty() && noteStr.front() == ' ') noteStr.erase(0, 1);
+        std::string errorMsg;
+        std::vector<std::string> parsedNotes = parseNoteInput(m_noteNameBuffer, errorMsg);
 
-        if (noteStr.empty()) {
-            m_state.setStatus("Error: Note name is empty");
+        if (!errorMsg.empty()) {
+            m_state.setStatus(errorMsg);
         } else if (durStr.empty()) {
             m_state.setStatus("Error: Duration is empty");
         } else {
-            Note newNote;
-            bool validNotes = true;
-
-            // Check if it's a rest
-            if (noteStr == "R" || noteStr == "r") {
-                newNote.noteNames.push_back("R");
-            } else if (noteStr.find(',') != std::string::npos) {
-                // Parse chord - validate each note
-                size_t start = 0;
-                size_t end;
-                while ((end = noteStr.find(',', start)) != std::string::npos) {
-                    std::string n = noteStr.substr(start, end - start);
-                    // Trim
-                    while (!n.empty() && n.front() == ' ') n.erase(0, 1);
-                    while (!n.empty() && n.back() == ' ') n.pop_back();
-                    if (!n.empty()) {
-                        if (!NoteParser::isValidNote(n)) {
-                            m_state.setStatus("Error: Invalid note '" + n + "'");
-                            validNotes = false;
-                            break;
-                        }
-                        newNote.noteNames.push_back(n);
-                    }
-                    start = end + 1;
-                }
-                if (validNotes) {
-                    std::string last = noteStr.substr(start);
-                    while (!last.empty() && last.front() == ' ') last.erase(0, 1);
-                    while (!last.empty() && last.back() == ' ') last.pop_back();
-                    if (!last.empty()) {
-                        if (!NoteParser::isValidNote(last)) {
-                            m_state.setStatus("Error: Invalid note '" + last + "'");
-                            validNotes = false;
-                        } else {
-                            newNote.noteNames.push_back(last);
-                        }
-                    }
-                }
-            } else {
-                // Single note - validate
-                if (!NoteParser::isValidNote(noteStr)) {
-                    m_state.setStatus("Error: Invalid note '" + noteStr + "'");
-                    validNotes = false;
-                } else {
-                    newNote.noteNames.push_back(noteStr);
-                }
-            }
-
-            // Validate duration
-            if (validNotes) {
-                float testDuration = RhythmParser::parseRhythm(durStr, 120.0f, "4/4");
-                if (testDuration <= 0) {
-                    m_state.setStatus("Error: Invalid duration '" + durStr + "'");
-                    validNotes = false;
-                }
-            }
-
-            if (validNotes && !newNote.noteNames.empty()) {
+            // Validate duration using actual tempo and time signature
+            float testDuration = RhythmParser::parseRhythm(durStr,
+                m_state.songContext.getTempo(),
+                m_state.songContext.getTimeSignature());
+            if (testDuration <= 0) {
+                m_state.setStatus("Error: Invalid duration '" + durStr + "'");
+            } else if (!parsedNotes.empty()) {
+                Note newNote;
+                newNote.noteNames = parsedNotes;
                 newNote.durationStr = durStr;
                 newNote.duration = 0.5f;  // Will be recalculated during generation
                 newNote.volume = m_noteVolume;
@@ -1034,47 +995,40 @@ void Application::generateAudio() {
     // Clear previous per-track audio
     m_state.trackAudio.clear();
 
-    std::map<int, SoundSamples*> rawTrackAudio;
+    // Generate audio for each track
     bool hasErrors = false;
     for (auto& pair : trackNotes) {
         int trackId = pair.first;
         std::vector<Note>& notes = pair.second;
 
         Track trackInfo = m_state.songContext.getTrackInfo(trackId, m_state.defaultWaveType);
-        SoundSamples* audio = SongGenerator::generateTrackAudio(notes, trackInfo, m_state.sampleRate);
+        auto audio = SongGenerator::generateTrackAudio(notes, trackInfo, m_state.sampleRate);
         if (audio) {
-            rawTrackAudio[trackId] = audio;
-            // Store a copy for per-track playback
-            SoundSamples* copy = new SoundSamples(audio->getLength(), audio->getSampleRate());
-            float* src = audio->getsamples();
-            float* dst = copy->getsamples();
-            for (int i = 0; i < audio->getLength(); i++) {
-                dst[i] = src[i];
-            }
-            m_state.trackAudio[trackId].reset(copy);
+            m_state.trackAudio[trackId] = std::move(audio);
         } else {
             hasErrors = true;
         }
     }
 
-    if (rawTrackAudio.empty()) {
+    if (m_state.trackAudio.empty()) {
         m_state.setStatus("Error: Failed to generate any audio");
         return;
     }
 
-    SoundSamples* mixed = SongGenerator::mixTracks(rawTrackAudio, m_state.sampleRate);
-
-    for (auto& pair : rawTrackAudio) {
-        delete pair.second;
+    // Build raw pointer map for mixing (unique_ptrs are now stored in m_state.trackAudio)
+    std::map<int, SoundSamples*> rawTrackAudio;
+    for (auto& pair : m_state.trackAudio) {
+        rawTrackAudio[pair.first] = pair.second.get();
     }
+
+    auto mixed = SongGenerator::mixTracks(rawTrackAudio, m_state.sampleRate);
 
     if (!mixed || mixed->getLength() == 0) {
         m_state.setStatus("Error: Failed to mix audio tracks");
-        if (mixed) delete mixed;
         return;
     }
 
-    m_state.generatedAudio.reset(mixed);
+    m_state.generatedAudio = std::move(mixed);
     m_state.audioNeedsRegeneration = false;
 
     if (hasErrors) {

@@ -28,6 +28,11 @@ struct EditorState {
     bool hasUnsavedChanges = false;
     std::string statusMessage;
 
+    // Inline note editing state (moved from static variables)
+    char editNoteBuffer[64] = "";
+    char editDurBuffer[16] = "";
+    float editVolume = 1.0f;
+
     // Per-track generated audio
     std::map<int, std::unique_ptr<SoundSamples>> trackAudio;
     // Mixed audio (all tracks combined)

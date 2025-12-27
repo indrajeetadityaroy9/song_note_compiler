@@ -464,10 +464,10 @@ vector<vector<Note>> MusicXMLParser::organizeIntoMeasures(
         float beats = RhythmParser::getNoteBeatValue(note.durationStr.empty() ? 'q' : note.durationStr[0]);
         if (beats < 0) beats = 1.0f;  // Default to quarter note
 
-        // Apply modifiers
+        // Apply modifiers using shared constants
         for (size_t i = 1; i < note.durationStr.size(); i++) {
-            if (note.durationStr[i] == '.') beats *= 1.5f;
-            else if (note.durationStr[i] == 't') beats *= 2.0f/3.0f;
+            if (note.durationStr[i] == '.') beats *= MusicConstants::DOTTED_MULTIPLIER;
+            else if (note.durationStr[i] == 't') beats *= MusicConstants::TRIPLET_MULTIPLIER;
         }
 
         // Check if note fits in current measure
